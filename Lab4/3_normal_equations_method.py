@@ -1,103 +1,61 @@
+# Implement normal equations method from scratch and compare your results on a simulated dataset (disease score fluctuation as target)
+# and the admissions dataset (https://www.kaggle.com/code/erkanhatipoglu/linear-regression-using-the-normal-equation ).
+# You can compare the results with scikit-learn and your own gradient descent implementation.
+
+### Closed-form solution (for simulated datasets) -
+
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 
-# --------------------------------------------------
-# Load data
-# --------------------------------------------------
-def load_data(filename):
-    data = pd.read_csv(filename)
-    X = data.iloc[:, 0:5].values.tolist()
-    y = data.iloc[:, 5].values.tolist()
-    return X, y
+data = pd.read_csv("simulated_data_multiple_linear_regression_for_ML.csv")
+X = data.drop(columns=['disease_score', 'disease_score_fluct']).values
+y = data['disease_score_fluct'].values
+X = np.c_[np.ones(X.shape[0]), X]     # Adding a bias term to X
+y = y.reshape(-1, 1)     # Normalise y
+theta = np.zeros(X.shape[1])
+num_of_iterations = 1000
+learning_rate = 0.01
 
+def hypothesis_func(X, theta):
+    return np.dot(X, theta)
 
-def split_data(X, y):
-    return train_test_split(X, y, test_size=0.3, random_state=999)
+def cost_func(X, theta, y):
+    error = np.dot(X, theta) - y
+    cost = 0.5 * np.dot(error.T, error)
+    return cost.item()     # .item() - converts 1 by 1 matrix into scalar form
 
+def compute_gradient(X, error):
+    return np.dot(X.T, error)
 
-# --------------------------------------------------
-# Standardization (from scratch)
-# --------------------------------------------------
-def compute_mean_and_std(X):
-    n_samples = len(X)
-    n_features = len(X[0])
+def compute_theta(X, y):
+    return np.dot(np.linalg.inv(np.dot(X.T, X)), np.dot(X.T, y))
 
-    mean = [0.0] * n_features
-    std = [0.0] * n_features
+def main():
+    theta_closed_form = compute_theta(X, y)      # Compute theta using closed-form solution (normal equation)
 
-    for j in range(n_features):
-        mean[j] = sum(X[i][j] for i in range(n_samples)) / n_samples
+    from sklearn.linear_model import LinearRegression    # Comparison with scikit-learn
+    from sklearn.metrics import mean_squared_error, r2_score
+    model = LinearRegression()
+    model.fit(X[:, 1:], y)     # We use X without the intercept term for sklearn
 
-    for j in range(n_features):
-        std[j] = (
-            sum((X[i][j] - mean[j]) ** 2 for i in range(n_samples)) / n_samples
-        ) ** 0.5
+    y_pred_closed_form = hypothesis_func(X, theta_closed_form)
+    y_pred_sklearn = model.predict(X[:, 1:])
 
-    return mean, std
+    mse_closed_form = mean_squared_error(y, y_pred_closed_form)
+    mse_sklearn = mean_squared_error(y, y_pred_sklearn)
 
+    r2_closed_form = r2_score(y, y_pred_closed_form)
+    r2_sklearn = r2_score(y, y_pred_sklearn)
 
-def normalize(X, mean, std):
-    X_norm = []
-    for i in range(len(X)):
-        row = []
-        for j in range(len(X[0])):
-            row.append((X[i][j] - mean[j]) / std[j])
-        X_norm.append(row)
-    return X_norm
+    print(f"Closed-form coefficients: {theta_closed_form.ravel()}")
+    print(f"Scikit-learn coefficients: {model.coef_.ravel()}")
 
+    print(f"Closed-form MSE: {mse_closed_form}")
+    print(f"Scikit-learn MSE: {mse_sklearn}")
 
-def add_bias(X):
-    return [[1] + row for row in X]
+    print(f"Closed-form R²: {r2_closed_form}")
+    print(f"Scikit-learn R²: {r2_sklearn}")
 
-
-def Matrix_Multiplication(X, y):
-    n_sample = len(X)
-    n_features = len(X[0])
-
-    theta = n_sample * [0]
-
-    XT = []
-    for i in range(n_features):
-        row = []
-        for j in range(n_sample):
-            row.append(X[j][i])
-        XT.append(row)
-
-    XTX = []
-    for i in range(len(XT)):          # rows of XT
-        row = []
-        for j in range(len(X[0])):    # columns of X
-            s = 0
-            for k in range(len(X)):   # columns of XT / rows of X
-                s += XT[i][k] * X[k][j]
-            row.append(s)
-        XTX.append(row)
-
-def mat_vec_mul(X, theta):
-    result = []
-    for i in range(len(X)):
-        s = 0
-        for j in range(len(theta)):
-            s += X[i][j] * theta[j]
-        result.append(s)
-    return result
-def cost_function(X, y, theta):
-    m = len(y)
-
-    # Xθ
-    y_hat = mat_vec_mul(X, theta)
-
-    # (Xθ − y)^2
-    cost = 0
-    for i in range(m):
-        error = y_hat[i] - y[i]
-        cost += error ** 2
-
-    # (1 / 2m) * sum
-    return cost / (2 * m)
-
-def matrix_inverse(A):
-    A = np.array(A, dtype=float)
-    return np.linalg.inv(A)
+if __name__ == "__main__":
+    main()
 
