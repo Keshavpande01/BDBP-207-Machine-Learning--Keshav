@@ -1,66 +1,63 @@
 import pandas as pd
 import numpy as np
 
-def hypothesis_fun(X, theta, row_idx):
-    total = 0
-    for j in range(len(theta)):
-        total += theta[j] * X[row_idx][j]
-    return total
 
 def cost_function(X, y, theta):
     m = len(y)
-    total_cost = 0
+    y_pred = X @ theta   # Hypothesis function
+    return np.sum((y_pred - y) ** 2) / (2 * m)
 
-    for i in range(m):
-        h = hypothesis_fun(X, theta, i)
-        total_cost += (h - y[i]) ** 2
-
-    return total_cost / (2 * m)
 
 def gradient_descent(X, y, theta, alpha, iterations):
     m = len(y)
 
-    for _ in range(iterations):
-        new_theta = theta.copy()
+    for i in range(iterations):
 
-        for j in range(len(theta)):
-            gradient_sum = 0
+        y_pred = X @ theta
+        gradient = (1/m) * (X.T @ (y_pred - y))
 
-            for i in range(m):
-                h = hypothesis_fun(X, theta, i)
-                gradient_sum += (h - y[i]) * X[i][j]
+        theta = theta - alpha * gradient
 
-            new_theta[j] = theta[j] - (alpha / m) * gradient_sum
-
-        theta = new_theta
+        loss = np.mean((y - y_pred) ** 2)
+        print(f"Iteration {i+1}, Loss: {loss:.4f}")
 
     return theta
 
 
+def r2_score(y, y_pred):
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
+    return 1 - (ss_res / ss_tot)
+
+
 def main():
-    file_path = "simulated_data_multiple_linear_regression_for_ML.csv"
-    df = pd.read_csv(file_path)
+
+    df = pd.read_csv("simulated_data_multiple_linear_regression_for_ML.csv")
 
     X = df.iloc[:, :-1].values
-    y = df.iloc[:, -1].values
+    y = df.iloc[:,-1].values
 
-    # Add bias term (x₀ = 1)
+    # Feature scaling
+    X = (X - X.mean(axis=0)) / X.std(axis=0)
+
+    # Add bias column
     m = X.shape[0]
     X = np.c_[np.ones(m), X]
 
-    # Initialize theta
     theta = np.zeros(X.shape[1])
 
-    alpha = 0.000001   # small because data is unnormalized
-    iterations = 10
+    alpha = 0.01
+    iterations = 1000
 
     theta = gradient_descent(X, y, theta, alpha, iterations)
 
-    print("Final Cost:", cost_function(X, y, theta))
+    print("\nFinal Cost:", cost_function(X, y, theta))
     print("Final Theta:", theta)
+
+    y_pred = X @ theta
+    print("Final R2:", r2_score(y, y_pred))
 
 
 if __name__ == "__main__":
     main()
-
 

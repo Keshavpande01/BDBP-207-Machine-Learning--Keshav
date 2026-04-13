@@ -22,7 +22,7 @@ def main():
     # Step 2: Separate features (clinical parameters) and target
     # Assuming last column is disease_score_fluct
     X = df.iloc[:, 0:5]      # multiple clinical parameters
-    y = df.iloc[:, 6]        # disease_score_fluct
+    y = df.iloc[:, 5]        # disease_score_fluct
 
     # Step 3: Train-test split
     X_train, X_test, y_train, y_test = train_test_split(
@@ -36,6 +36,9 @@ def main():
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
+
+    print("Scaled training data shape:", X_train_scaled)
+    print("Scaled test data shape:", X_test_scaled)
 
     # Step 5: Initialize Linear Regression model
     model = LinearRegression()
