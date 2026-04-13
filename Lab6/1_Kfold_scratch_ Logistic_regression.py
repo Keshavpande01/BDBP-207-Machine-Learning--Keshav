@@ -1,14 +1,17 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
 
 # -----------------------------
 # Load Dataset
 # -----------------------------
 def load_data(filename):
+    # Convert target to Numeric
     data = pd.read_csv(filename)
-    X = data.iloc[:,0:6].values
-    y = data.iloc[:,6].values
+    X = data.iloc[:,0:-1].values
+    y = data.iloc[:,-1].values
+    y = np.where(y == 'M', 1, 0)
     return X,y
 
 # -----------------------------
@@ -19,75 +22,117 @@ def add_intercept(X):
     X = np.hstack((x0,X))
     return X
 
+
 # -----------------------------
-# Hypothesis function
+# Sigmoid Function
+# -----------------------------
+def sigmoid(z):
+    return 1/(1 + np.exp(-z))
+
+
+# -----------------------------
+# Hypothesis Function
 # -----------------------------
 def hypothesis(X,thetas):
-    predictions = []
+    preds = []
     for i in range(len(X)):
-        h = 0
+        z = 0
         for j in range(len(thetas)):
-            h += thetas[j] * X[i][j]
-        predictions.append(h)
-    return predictions
+            z += thetas[j] * X[i][j]
+        preds.append(sigmoid(z))
+    return preds
+
 
 # -----------------------------
 # Gradient Descent
 # -----------------------------
 def gradient_descent(X,y,alpha=0.01,iterations=1000):
+
     m,n = X.shape
+
     thetas = [0]*n
+
     for iteration in range(iterations):
+
         preds = hypothesis(X,thetas)
+
         new_thetas = thetas.copy()
+
         for j in range(n):
+
             gradient = 0
+
             for i in range(m):
                 gradient += (preds[i] - y[i]) * X[i][j]
-            gradient = gradient / m
-            new_thetas[j] = thetas[j] - alpha * gradient
+
+            gradient = gradient/m
+
+            new_thetas[j] = thetas[j] - alpha*gradient
+
         thetas = new_thetas
+
     return thetas
+
 
 # -----------------------------
 # Prediction
 # -----------------------------
 def predict(X,thetas):
+
     preds = []
+
     for i in range(len(X)):
-        h = 0
+
+        z = 0
+
         for j in range(len(thetas)):
-            h += thetas[j] * X[i][j]
-        preds.append(h)
+            z += thetas[j] * X[i][j]
+
+        prob = sigmoid(z)
+
+        if prob >= 0.5:
+            preds.append(1)
+        else:
+            preds.append(0)
+
     return preds
 
 
 # -----------------------------
-# R2 Score
+# Accuracy
 # -----------------------------
-def r2_score(y_true,y_pred):
-    y_mean = sum(y_true)/len(y_true)
-    ss_total = 0
-    ss_res = 0
+def accuracy_score(y_true,y_pred):
+
+    correct = 0
+
     for i in range(len(y_true)):
-        ss_total += (y_true[i] - y_mean)**2
-        ss_res += (y_true[i] - y_pred[i])**2
-    r2 = 1 - (ss_res/ss_total)
-    return r2
+        if y_true[i] == y_pred[i]:
+            correct += 1
+
+    acc = correct/len(y_true)
+
+    return acc
 
 
 # -----------------------------
-# K Fold Cross Validation
+# K-Fold Cross Validation
 # -----------------------------
 def k_fold_cv(X,y,k=5):
+
     n = len(X)
+
     indices = np.arange(n)
     np.random.shuffle(indices)
-    fold_size = n // k
+
+    fold_size = n//k
+
     scores = []
+
     for fold in range(k):
-        start = fold * fold_size
+
+        start = fold*fold_size
         end = start + fold_size
+
         test_idx = indices[start:end]
         train_idx = np.concatenate((indices[:start],indices[end:]))
 
@@ -108,19 +153,18 @@ def k_fold_cv(X,y,k=5):
         X_test = add_intercept(X_test)
 
         # Train model
-        thetas = gradient_descent(X_train,y_train,alpha=0.01,iterations=1000)
+        thetas = gradient_descent(X_train,y_train)
 
-        # Prediction
+        # Predict
         y_pred = predict(X_test,thetas)
 
-        # R2
-        score = r2_score(y_test,y_pred)
+        acc = accuracy_score(y_test,y_pred)
 
-        scores.append(score)
+        scores.append(acc)
 
-        print("Fold",fold+1,"R2 =",score)
+        print("Fold",fold+1,"Accuracy =",acc)
 
-    print("Average R2 =",sum(scores)/len(scores))
+    print("Average Accuracy =",sum(scores)/len(scores))
 
 
 # -----------------------------
@@ -128,9 +172,12 @@ def k_fold_cv(X,y,k=5):
 # -----------------------------
 def main():
 
-    X,y = load_data("simulated_data_multiple_linear_regression_for_ML.csv")
+    X,y = load_data("sonar.csv")
+
     print("Dataset shape:",X.shape)
-    k_fold_cv(X,y,k=15)
+
+    k_fold_cv(X,y,k=10)
+
 
 if __name__ == "__main__":
     main()

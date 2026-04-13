@@ -130,7 +130,7 @@ def main():
 
     X,y = load_data("simulated_data_multiple_linear_regression_for_ML.csv")
     print("Dataset shape:",X.shape)
-    k_fold_cv(X,y,k=15)
+    k_fold_cv(X,y,k=10)
 
 if __name__ == "__main__":
     main()
