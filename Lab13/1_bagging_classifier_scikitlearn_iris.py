@@ -1,5 +1,5 @@
 ### Implement bagging classifier using scikit-learn. Use iris dataset from scikit-learn.
-
+import numpy as np
 import pandas as pd
 from sklearn.datasets import load_iris
 from sklearn.ensemble import BaggingClassifier
@@ -42,6 +42,30 @@ bag_clf.fit(X_train_scaled, y_train)
 y_pred = bag_clf.predict(X_test_scaled)
 print("Predicted y-values: ")
 print(y_pred)
+
+
+#=======================================================
+# To find optimal alpha
+# path = DecisionTreeClassifier().cost_complexity_pruning_path(X_train_scaled, y_train)
+# ccp_alphas = path.ccp_alphas
+#
+# clfs = []
+# for alpha in ccp_alphas:
+#     clf = DecisionTreeClassifier(ccp_alpha = alpha)
+#     clf.fit(X_train_scaled, y_train)
+#     clfs.append(clf)
+#
+# from sklearn.metrics import accuracy_score
+# alpha_scores =[]
+# for clf in clfs:
+#     y_pred = clf.predict(X_test_scaled)
+#     alpha_scores.append(accuracy_score(y_test, y_pred))
+#
+# best_alpha = ccp_alphas[alpha_scores.index(max(alpha_scores))]
+# print("Best alpha value: ", best_alpha)
+#=========================================================================
+
+
 
 # Evaluate the model -
 accuracy = accuracy_score(y_test, y_pred)

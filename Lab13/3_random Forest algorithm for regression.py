@@ -15,17 +15,13 @@ df = pd.DataFrame(X, columns=feature_names)    # converting into dataframe
 # EDA already done in exercise-1
 
 # Split the dataset into 70% train set & 30% test set -
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42 )
 
-# Scaling -
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
 
 # Training the model -
-rand_forest_reg = RandomForestRegressor(n_estimators=100, max_depth=3, max_features='sqrt', bootstrap=True, random_state=999, n_jobs=-1)
-rand_forest_reg.fit(X_train_scaled, y_train)
-y_pred = rand_forest_reg.predict(X_test_scaled)
+rand_forest_reg = RandomForestRegressor(n_estimators=300, max_depth=None,min_samples_split=5,min_samples_leaf=2, max_features='sqrt', bootstrap=True, random_state=42, n_jobs=-1)
+rand_forest_reg.fit(X_train, y_train)
+y_pred = rand_forest_reg.predict(X_test)
 print("Predicted y-values: ")
 print(y_pred)
 

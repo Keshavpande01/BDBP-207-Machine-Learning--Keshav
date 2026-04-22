@@ -96,7 +96,7 @@ def predict_forest(trees, X):
 # -----------------------------
 # Bagging
 # -----------------------------
-def bagging(X_train, y_train, n_trees=10, max_depth=5, max_features=None):
+def bagging(X_train, y_train, n_trees=10, max_depth=10, max_features=None):
     trees = []
     n = len(X_train)
 
