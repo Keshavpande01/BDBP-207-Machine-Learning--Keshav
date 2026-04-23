@@ -64,7 +64,6 @@ X_test_scaled = scaler.transform(X_test)    # transform test data
 # Training the model -
 model = LogisticRegression()
 model.fit(X_train_scaled, y_train)
-
 predicted_probs = model.predict_proba(X_test_scaled)[:, 1]    # Get probabilities of class 1
 thresholds = [0.7, 0.5, 0.4, 0.2]
 confusion_matrices = compute_confusion_matrix(y_test, predicted_probs, thresholds)

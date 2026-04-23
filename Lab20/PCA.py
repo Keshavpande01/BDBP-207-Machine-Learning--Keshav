@@ -1,130 +1,120 @@
-### PRINCIPAL COMPONENT ANALYSIS
+# ============================================
+# PRINCIPAL COMPONENT ANALYSIS (FINAL CLEAN)
+# ============================================
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import StratifiedKFold
-from statsmodels.datasets import get_rdataset
+
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
 
+
+# ============================================
+# PCA ON USArrests
+# ============================================
 def PCA_custom():
-    USArrests = get_rdataset('USArrests').data    # Built-in R dataset from statsmodels
-    print(USArrests)
-    print("Columns:", USArrests.columns)
-    print("Mean:\n", USArrests.mean())
-    print("Variance:\n", USArrests.var())
 
-    scaler = StandardScaler(with_mean=True, with_std=True)    # Standardize the dataset (important before PCA)
-    USArrests_scaled = scaler.fit_transform(USArrests)
+    data = {
+        "State": ["Alabama","Alaska","Arizona","Arkansas","California",
+                  "Colorado","Connecticut","Delaware","Florida","Georgia"],
+        "Murder": [13.2,10.0,8.1,8.8,9.0,7.9,3.3,5.9,15.4,17.4],
+        "Assault": [236,263,294,190,276,204,110,238,335,211],
+        "UrbanPop": [58,48,80,50,91,78,77,72,80,60],
+        "Rape": [21.2,44.5,31.0,19.5,40.6,38.7,11.1,15.8,31.9,25.8]
+    }
 
-    pcaUS = PCA()   # Perform PCA
-    pcaUS.fit(USArrests_scaled)
-    print("Mean used by PCA:", pcaUS.mean_)   # should be ~0 after scaling
+    df = pd.DataFrame(data).set_index("State")
 
-    scores = pcaUS.transform(USArrests_scaled)   # Get PCA scores (i.e., transformed data in new PC axes)
-    print("Principal Components (Loadings):\n", pcaUS.components_)
+    print("\n===== ORIGINAL DATA =====")
+    print(df)
 
-    # Plot PCA Biplot (PC1 vs PC2)
-    i, j = 0, 1   # Plotting the 1st and 2nd principal components
-    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
-    # First biplot: original
-    axes[0].scatter(scores[:, i], scores[:, j])
-    axes[0].set_title("Original Orientation")
-    axes[0].set_xlabel(f'PC{i+1}')
-    axes[0].set_ylabel(f'PC{j+1}')
-    for k in range(pcaUS.components_.shape[1]):
-        axes[0].arrow(0, 0, pcaUS.components_[i, k], pcaUS.components_[j, k], color='r', head_width=0.05)
-        axes[0].text(pcaUS.components_[i, k]*1.15, pcaUS.components_[j, k]*1.15, USArrests.columns[k], color='g')
+    # Standardize
+    X_scaled = StandardScaler().fit_transform(df)
 
-    # Second biplot: scaled arrows
-    axes[1].scatter(scores[:, i], -scores[:, j])
-    axes[1].set_title("Flipped and Scaled")
-    axes[1].set_xlabel(f'PC{i+1}')
-    axes[1].set_ylabel(f'PC{j+1}')
-    scale_arrow = 2
-    for k in range(pcaUS.components_.shape[1]):
-        axes[1].arrow(0, 0, scale_arrow * pcaUS.components_[i, k], scale_arrow * -pcaUS.components_[j, k], color='r', head_width=0.05)
-        axes[1].text(scale_arrow * pcaUS.components_[i, k] * 1.1,
-                     scale_arrow * pcaUS.components_[j, k] * -1.1,
-                     USArrests.columns[k], color='g')
-    plt.tight_layout()
-    plt.show()
+    # PCA
+    pca = PCA()
+    scores = pca.fit_transform(X_scaled)
 
-    print("Explained Variance:\n", pcaUS.explained_variance_)   # Variance explained by each principal component
+    # ================== INTERPRETATION ==================
+    print("\n" + "="*50)
+    print("        PCA INTERPRETATION")
+    print("="*50)
 
-    # Scree Plot and Cumulative Variance
-    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
-    ticks = np.arange(1, pcaUS.n_components_ + 1)
+    explained_var = pca.explained_variance_ratio_
 
-    # Scree plot
-    axes[0].plot(ticks, pcaUS.explained_variance_ratio_, marker='o')
-    axes[0].set_xlabel('Principal Component')
-    axes[0].set_ylabel('Proportion of Variance Explained')
-    axes[0].set_title("Scree Plot")
-    axes[0].set_ylim([0, 1])
-    axes[0].set_xticks(ticks)
+    print("\nVariance Explained:")
+    for i, var in enumerate(explained_var):
+        print(f"  PC{i+1}: {var:.4f}")
 
-    # Cumulative variance plot
-    axes[1].plot(ticks, pcaUS.explained_variance_ratio_.cumsum(), marker='o')
-    axes[1].set_xlabel('Principal Component')
-    axes[1].set_ylabel('Cumulative Proportion of Variance Explained')
-    axes[1].set_title("Cumulative Variance")
-    axes[1].set_ylim([0, 1])
-    axes[1].set_xticks(ticks)
-    plt.tight_layout()
-    plt.show()
+    print(f"\nTotal (PC1 + PC2): {sum(explained_var[:2]):.4f}")
 
-    # Illustration of cumulative sum
-    a = np.array([1, 2, 8, -3])
-    print("Cumulative sum of a:", np.cumsum(a))
+    loadings = pd.DataFrame(
+        pca.components_.T,
+        columns=[f"PC{i+1}" for i in range(len(pca.components_))],
+        index=df.columns
+    )
 
+    print("\nLoadings:\n", loadings)
+
+    print("\nKey Contributors:")
+    print("PC1:", loadings["PC1"].abs().sort_values(ascending=False).head(2).index.tolist())
+    print("PC2:", loadings["PC2"].abs().sort_values(ascending=False).head(2).index.tolist())
+
+    print("\nConclusion:")
+    print("PC1 → overall crime level")
+    print("PC2 → urban population variation")
+
+    print("="*50)
+
+
+# ============================================
+# PCA + SVM (SONAR DATASET)
+# ============================================
 def PCA_OnDataSet():
-    def load_data():
-        column_names = [f"Feature_{i}" for i in range(60)] + ["Label"] # sonar.csv has 60 features + 1 label column
-        data = pd.read_csv("sonar.csv", header=None, names=column_names)
-        print(data.head())
-        X = data.drop(columns=["Label"])  # Feature matrix
-        y = data["Label"]  # Target labels
-        return X,y
 
-    def data_preprocessing(X_t, X_test, y_t, y_test):
-        label = LabelEncoder()
-        y_t_encoded = label.fit_transform(y_t)
-        y_test_encoded = label.transform(y_test)
+    data = pd.read_csv("sonar.csv", header=None)
+    X = data.iloc[:, :-1]
+    y = data.iloc[:, -1]
 
-        scaler = StandardScaler()
-        X_t = scaler.fit_transform(X_t)
-        X_test = scaler.transform(X_test)
+    y = LabelEncoder().fit_transform(y)
+    X = StandardScaler().fit_transform(X)
 
-        return X_t, X_test, y_t_encoded, y_test_encoded
-
-    def kfold(X, y, model):
-        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-        test_accuracies = []
-        fold = 1
-        for train_index, test_index in skf.split(X, y):
-            X_train, X_test = X[train_index, :], X[test_index, :]
-            y_train, y_test = y[train_index], y[test_index]
-            X_train_p, X_test_p, y_train_p, y_test_p = data_preprocessing(X_train, X_test, y_train, y_test)
-            model.fit(X_train_p, y_train_p)
-            y_pred = model.predict(X_test_p)
-            acc = accuracy_score(y_test_p, y_pred)
-            test_accuracies.append(acc)
-            print(f"Fold {fold} - Test Accuracy: {acc:.4f}")
-            fold += 1
-        print(f"\nOverall Average Test Accuracy: {np.mean(test_accuracies):.4f}")
-
-    X, y = load_data()
+    # PCA
     pca = PCA(n_components=0.95)
-    X_t = pca.fit_transform(X)
-    model1 = LogisticRegression(max_iter=1000, random_state=32)
-    model2 = SVC(random_state=42, max_iter=1000)
-    kfold(X_t, y, model2)
+    X_pca = pca.fit_transform(X)
 
+    print("\n===== PCA DIMENSION REDUCTION =====")
+    print("Original features:", X.shape[1])
+    print("Reduced features:", X_pca.shape[1])
+
+    # K-Fold
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+    acc_list = []
+
+    for fold, (train_idx, test_idx) in enumerate(skf.split(X_pca, y), 1):
+
+        X_train, X_test = X_pca[train_idx], X_pca[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        model = SVC()
+        model.fit(X_train, y_train)
+
+        acc = accuracy_score(y_test, model.predict(X_test))
+        acc_list.append(acc)
+
+        print(f"Fold {fold}: Accuracy = {acc:.4f}")
+
+    print("\nAverage Accuracy:", np.mean(acc_list))
+
+
+# ============================================
+# MAIN
+# ============================================
 if __name__ == "__main__":
     PCA_custom()
     PCA_OnDataSet()

@@ -4,7 +4,7 @@ import pandas as pd
 
 def main():
 
-    data = pd.read_csv("Advertising.csv")
+    data = pd.read_csv("Carseats.csv")
 
     categorical_cols = []
 
